@@ -35,6 +35,10 @@ class BaseConfig:
     #: Create and populate the database at startup when it is empty.
     AUTO_SEED = _env_flag("AUTO_SEED", True)
 
+    #: Listing pagination.
+    DEFAULT_PAGE_SIZE = 12
+    MAX_PAGE_SIZE = 100
+
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
