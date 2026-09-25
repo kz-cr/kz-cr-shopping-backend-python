@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def artwork_count() -> int:
+    """Count the artworks currently stored in the database."""
     return db.session.scalar(select(func.count()).select_from(Artwork)) or 0
 
 

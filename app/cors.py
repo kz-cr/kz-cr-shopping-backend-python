@@ -27,8 +27,10 @@ def _allowed_origin(app: Flask) -> str | None:
 
 
 def register_cors(app: Flask) -> None:
+    """Attach response headers for origins allowed by the app config."""
     @app.after_request
     def add_cors_headers(response: Response) -> Response:
+        """Apply the CORS policy to a completed response."""
         origin = _allowed_origin(app)
         if origin is None:
             return response

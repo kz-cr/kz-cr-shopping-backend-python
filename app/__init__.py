@@ -15,6 +15,7 @@ __all__ = ["create_app", "db"]
 
 
 def create_app(config: str | type[BaseConfig] | None = None) -> Flask:
+    """Build the Flask app, register its routes, and bootstrap the catalogue."""
     app = Flask(
         __name__,
         static_folder=str(STATIC_DIR),
@@ -36,10 +37,12 @@ def create_app(config: str | type[BaseConfig] | None = None) -> Flask:
 
     @app.get("/health")
     def health():
+        """Report that the API process is responding."""
         return jsonify({"status": "ok"})
 
     @app.get("/")
     def index():
+        """List the API endpoints available to clients."""
         return jsonify(
             {
                 "name": "KZ-CR Art Gallery API",
@@ -79,6 +82,7 @@ def _bootstrap(app: Flask) -> None:
 
 
 def _register_cli(app: Flask) -> None:
+    """Add the database initialization command to the Flask CLI."""
     @app.cli.command("init-db")
     @click.option("--reset", is_flag=True, help="Drop existing rows before seeding.")
     def init_db(reset: bool) -> None:

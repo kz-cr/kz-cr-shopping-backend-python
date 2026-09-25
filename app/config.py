@@ -8,6 +8,7 @@ from .paths import DATABASE_PATH
 
 
 def _env_flag(name: str, default: bool) -> bool:
+    """Read a boolean environment setting, falling back when it is absent."""
     raw = os.environ.get(name)
     if raw is None:
         return default
@@ -15,6 +16,7 @@ def _env_flag(name: str, default: bool) -> bool:
 
 
 def _env_list(name: str, default: list[str]) -> list[str]:
+    """Split a comma-separated environment setting into nonempty values."""
     raw = os.environ.get(name)
     if raw is None:
         return default
@@ -58,6 +60,7 @@ CONFIGS = {
 
 
 def resolve_config(name: str | None = None) -> type[BaseConfig]:
+    """Choose a config class by name or the ``FLASK_CONFIG`` setting."""
     key = (name or os.environ.get("FLASK_CONFIG") or "development").lower()
     try:
         return CONFIGS[key]
