@@ -32,6 +32,7 @@ JPEG_QUALITY = 82
 
 
 def process(entry: CatalogEntry, force: bool) -> str:
+    """Download and resize one image unless both local versions exist."""
     full_path = IMAGE_DIR / f"{entry.slug}.jpg"
     thumb_path = THUMBNAIL_DIR / f"{entry.slug}.jpg"
     if not force and full_path.exists() and thumb_path.exists():
@@ -52,6 +53,7 @@ def process(entry: CatalogEntry, force: bool) -> str:
 
 
 def main() -> int:
+    """Vendor catalogue images concurrently and report each result."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--force", action="store_true", help="re-download images that already exist"

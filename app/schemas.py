@@ -16,6 +16,7 @@ from .paths import IMAGE_STATIC_PREFIX, THUMBNAIL_STATIC_PREFIX
 
 
 def _static_url(prefix: str, filename: str) -> str:
+    """Build an absolute URL for an image under the static directory."""
     return url_for("static", filename=f"{prefix}/{filename}", _external=True)
 
 
@@ -33,6 +34,7 @@ def _isoformat_utc(value: datetime | None) -> str | None:
 
 
 def serialize_image(image: ArtworkImage) -> dict[str, Any]:
+    """Expose an image's full-size and thumbnail URLs to API clients."""
     return {
         "id": image.id,
         "url": _static_url(IMAGE_STATIC_PREFIX, image.filename),
@@ -44,6 +46,7 @@ def serialize_image(image: ArtworkImage) -> dict[str, Any]:
 
 
 def serialize_artwork(artwork: Artwork) -> dict[str, Any]:
+    """Convert an artwork and its ordered images to the public API shape."""
     images = [serialize_image(image) for image in artwork.images]
     return {
         "id": artwork.id,

@@ -8,6 +8,7 @@ from .extensions import db
 
 
 def _utcnow() -> datetime:
+    """Return the current time with an explicit UTC timezone."""
     return datetime.now(timezone.utc)
 
 
@@ -47,9 +48,11 @@ class Artwork(db.Model):
 
     @property
     def price(self) -> float:
+        """Expose the integer cent price as a decimal dollar amount."""
         return round(self.price_cents / 100, 2)
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        """Show the artwork id and slug in debugging output."""
         return f"<Artwork {self.id} {self.slug!r}>"
 
 
@@ -83,7 +86,9 @@ class ArtworkImage(db.Model):
 
     @property
     def is_primary(self) -> bool:
+        """Indicate whether this is the first image for its artwork."""
         return self.position == 0
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        """Show the image id and filename in debugging output."""
         return f"<ArtworkImage {self.id} {self.filename!r}>"

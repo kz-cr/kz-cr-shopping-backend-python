@@ -104,10 +104,12 @@ REQUIREMENTS="requirements.txt"
 [ "$FETCH_IMAGES" -eq 1 ] && REQUIREMENTS="requirements-dev.txt"
 
 # The stamp is per requirements file, so switching between them reinstalls
-# rather than silently reusing the wrong set.
+# rather than silently reusing the wrong set. The development requirements
+# include requirements.txt, so that file must also be current for its stamp.
 STAMP="$VENV_DIR/.stamp-$(basename "$REQUIREMENTS")"
 
-if [ ! -f "$STAMP" ] || [ "$REQUIREMENTS" -nt "$STAMP" ]; then
+if [ ! -f "$STAMP" ] || [ "$REQUIREMENTS" -nt "$STAMP" ] \
+    || { [ "$FETCH_IMAGES" -eq 1 ] && [ "requirements.txt" -nt "$STAMP" ]; }; then
     say "Installing dependencies from $REQUIREMENTS"
     "$VENV_PYTHON" -m pip install --quiet --upgrade pip
     "$VENV_PYTHON" -m pip install --quiet -r "$REQUIREMENTS"

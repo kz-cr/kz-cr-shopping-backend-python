@@ -8,6 +8,7 @@ CATALOG_SIZE = len(CATALOG)
 
 
 def test_catalog_has_thirty_unique_entries():
+    """Keep the demo catalogue at 30 entries with distinct slugs."""
     assert CATALOG_SIZE == 30
     assert len({entry.slug for entry in CATALOG}) == 30
 
@@ -27,6 +28,7 @@ def test_list_returns_first_page(client):
 
 
 def test_item_payload_shape(client):
+    """Expose prices and image metadata in the documented API shape."""
     item = client.get("/api/items").get_json()["items"][0]
 
     assert item["title"]
@@ -43,13 +45,23 @@ def test_item_payload_shape(client):
     assert item["primary_image"] == image
 
 
-def test_every_item_has_an_image_that_is_actually_served(client):
-    body = client.get("/api/items?per_page=100").get_json()
-    assert len(body["items"]) == CATALOG_SIZE
+def test_every_item_has_a_title_description_price_and_image(client):
+    """Keep required listing fields populated across the whole catalogue."""
+    items = client.get("/api/items").get_json()["items"]
 
-    for item in body["items"]:
-        assert item["images"], f"{item['slug']} has no image"
-        for url in (item["images"][0]["url"], item["images"][0]["thumbnail_url"]):
+    assert len({item["title"] for item in items}) == CATALOG_SIZE
+    for item in items:
+        assert item["title"], item["slug"]
+        assert len(item["description"]) > 40, item["slug"]
+        assert PRICE_MIN_CENTS <= item["price_cents"] <= PRICE_MAX_CENTS, item["slug"]
+        assert item["images"], item["slug"]
+
+
+def test_every_image_url_actually_serves_a_jpeg(client):
+    """Serve both image sizes as JPEGs at their advertised URLs."""
+    for item in client.get("/api/items").get_json()["items"]:
+        image = item["images"][0]
+        for url in (image["url"], image["thumbnail_url"]):
             response = client.get(url)
             assert response.status_code == 200, url
             assert response.mimetype == "image/jpeg"
@@ -128,6 +140,7 @@ def test_search_does_not_duplicate_rows_matching_several_fields(client):
 
 
 def test_created_at_is_explicit_utc(client):
+    """Serialize creation timestamps as parseable UTC values."""
     created_at = client.get("/api/items").get_json()["items"][0]["created_at"]
 
     assert created_at.endswith("Z")
@@ -158,6 +171,7 @@ def test_categories_endpoint_counts_match_the_listing(client):
 
 
 def test_get_item_by_id_and_slug(client):
+    """Resolve either item identifier to the same artwork payload."""
     listed = client.get("/api/items").get_json()["items"][0]
 
     by_id = client.get(f"/api/items/{listed['id']}").get_json()["item"]
@@ -167,6 +181,7 @@ def test_get_item_by_id_and_slug(client):
 
 
 def test_missing_item_returns_json_404(client):
+    """Return a JSON 404 when no artwork matches the requested identifier."""
     response = client.get("/api/items/does-not-exist")
 
     assert response.status_code == 404
@@ -174,6 +189,7 @@ def test_missing_item_returns_json_404(client):
 
 
 def test_unknown_route_returns_json_not_html(client):
+    """Keep framework 404 responses in the API's JSON format."""
     response = client.get("/api/nope")
 
     assert response.status_code == 404
@@ -189,6 +205,7 @@ def test_prices_are_stable_across_rebuilds(client):
 
 
 def test_seeding_twice_does_not_duplicate_rows(app):
+    """Leave an already populated database unchanged on a second seed."""
     from app.seed import artwork_count, seed_database
 
     assert artwork_count() == CATALOG_SIZE
@@ -198,10 +215,12 @@ def test_seeding_twice_does_not_duplicate_rows(app):
 
 class TestCors:
     def test_wildcard_origin_by_default(self, client):
+        """Allow browser requests from any origin in the default config."""
         response = client.get("/api/items", headers={"Origin": "http://localhost:3000"})
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
     def test_preflight_is_answered(self, client):
+        """Advertise GET support in a browser preflight response."""
         response = client.options(
             "/api/items",
             headers={
@@ -213,6 +232,7 @@ class TestCors:
         assert "GET" in response.headers["Access-Control-Allow-Methods"]
 
     def test_allowlist_rejects_unlisted_origin(self, app, client):
+        """Advertise CORS only for origins in the configured allowlist."""
         app.config["CORS_ORIGINS"] = ["http://localhost:3000"]
 
         allowed = client.get("/api/items", headers={"Origin": "http://localhost:3000"})
