@@ -1,0 +1,45 @@
+"""A single JSON error shape for every failure the API can return."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from flask import Flask, jsonify
+from werkzeug.exceptions import HTTPException
+
+
+class ApiError(Exception):
+    """An error that should be rendered to the client verbatim."""
+
+    def __init__(
+        self, message: str, status: int = 400, *, details: dict[str, Any] | None = None
+    ) -> None:
+        super().__init__(message)
+        self.message = message
+        self.status = status
+        self.details = details or {}
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {"error": {"status": self.status, "message": self.message}}
+        if self.details:
+            payload["error"]["details"] = self.details
+        return payload
+
+
+def register_error_handlers(app: Flask) -> None:
+    @app.errorhandler(ApiError)
+    def handle_api_error(exc: ApiError):
+        return jsonify(exc.to_dict()), exc.status
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(exc: HTTPException):
+        # Keeps 404s and 405s on non-API routes in the same JSON shape, so a
+        # client never has to parse Werkzeug's HTML error page.
+        error = ApiError(exc.description or exc.name, exc.code or 500)
+        return jsonify(error.to_dict()), error.status
+
+    @app.errorhandler(Exception)
+    def handle_unexpected(exc: Exception):  # pragma: no cover - safety net
+        app.logger.exception("Unhandled error", exc_info=exc)
+        error = ApiError("Internal server error", 500)
+        return jsonify(error.to_dict()), 500
