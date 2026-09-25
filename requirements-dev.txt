@@ -1,0 +1,5 @@
+-r requirements.txt
+
+pytest==8.4.2
+# Only needed by scripts/fetch_images.py, not at runtime.
+pillow==11.3.0

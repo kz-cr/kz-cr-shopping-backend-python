@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# The database is generated from app/catalog.py on first run.
+instance/
+*.db
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.DS_Store
