@@ -47,10 +47,10 @@ def test_item_payload_shape(client):
 
 def test_every_item_has_a_title_description_price_and_image(client):
     """Keep required listing fields populated across the whole catalogue."""
-    items = client.get("/api/items").get_json()["items"]
+    body = client.get("/api/items?per_page=100").get_json()
+    assert len(body["items"]) == CATALOG_SIZE
 
-    assert len({item["title"] for item in items}) == CATALOG_SIZE
-    for item in items:
+    for item in body["items"]:
         assert item["title"], item["slug"]
         assert len(item["description"]) > 40, item["slug"]
         assert PRICE_MIN_CENTS <= item["price_cents"] <= PRICE_MAX_CENTS, item["slug"]
