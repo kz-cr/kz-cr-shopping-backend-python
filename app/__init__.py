@@ -47,9 +47,9 @@ def create_app(config: str | type[BaseConfig] | None = None) -> Flask:
             {
                 "name": "KZ-CR Art Gallery API",
                 "endpoints": {
-                    "items": "/api/items",
-                    "item": "/api/items/<id-or-slug>",
-                    "categories": "/api/categories",
+                    "items": "/api/v2/items",
+                    "item": "/api/v2/items/<id-or-slug>",
+                    "categories": "/api/v2/categories",
                     "health": "/health",
                 },
             }

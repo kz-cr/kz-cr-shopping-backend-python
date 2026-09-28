@@ -14,7 +14,7 @@ def test_catalog_has_thirty_unique_entries():
 
 
 def test_list_returns_first_page(client):
-    body = client.get("/api/items").get_json()
+    body = client.get("/api/v2/items").get_json()
 
     assert body["pagination"] == {
         "page": 1,
@@ -29,7 +29,7 @@ def test_list_returns_first_page(client):
 
 def test_item_payload_shape(client):
     """Expose prices and image metadata in the documented API shape."""
-    item = client.get("/api/items").get_json()["items"][0]
+    item = client.get("/api/v2/items").get_json()["items"][0]
 
     assert item["title"]
     assert len(item["description"]) > 40
@@ -47,7 +47,7 @@ def test_item_payload_shape(client):
 
 def test_every_item_has_a_title_description_price_and_image(client):
     """Keep required listing fields populated across the whole catalogue."""
-    body = client.get("/api/items?per_page=100").get_json()
+    body = client.get("/api/v2/items?per_page=100").get_json()
     assert len(body["items"]) == CATALOG_SIZE
 
     for item in body["items"]:
@@ -59,7 +59,7 @@ def test_every_item_has_a_title_description_price_and_image(client):
 
 def test_every_image_url_actually_serves_a_jpeg(client):
     """Serve both image sizes as JPEGs at their advertised URLs."""
-    for item in client.get("/api/items").get_json()["items"]:
+    for item in client.get("/api/v2/items").get_json()["items"]:
         image = item["images"][0]
         for url in (image["url"], image["thumbnail_url"]):
             response = client.get(url)
@@ -70,13 +70,13 @@ def test_every_image_url_actually_serves_a_jpeg(client):
 def test_pagination_walks_the_whole_catalogue_without_repeats(client):
     seen = []
     for page in (1, 2, 3):
-        body = client.get(f"/api/items?page={page}&per_page=12").get_json()
+        body = client.get(f"/api/v2/items?page={page}&per_page=12").get_json()
         seen.extend(item["id"] for item in body["items"])
 
     assert len(seen) == CATALOG_SIZE
     assert len(set(seen)) == CATALOG_SIZE
 
-    empty = client.get("/api/items?page=4&per_page=12").get_json()
+    empty = client.get("/api/v2/items?page=4&per_page=12").get_json()
     assert empty["items"] == []
     assert empty["pagination"]["has_next"] is False
 
@@ -84,11 +84,11 @@ def test_pagination_walks_the_whole_catalogue_without_repeats(client):
 def test_sort_by_price(client):
     ascending = [
         item["price_cents"]
-        for item in client.get("/api/items?sort=price_asc&per_page=100").get_json()["items"]
+        for item in client.get("/api/v2/items?sort=price_asc&per_page=100").get_json()["items"]
     ]
     descending = [
         item["price_cents"]
-        for item in client.get("/api/items?sort=price_desc&per_page=100").get_json()["items"]
+        for item in client.get("/api/v2/items?sort=price_desc&per_page=100").get_json()["items"]
     ]
 
     assert ascending == sorted(ascending)
@@ -96,7 +96,7 @@ def test_sort_by_price(client):
 
 
 def test_price_range_filter(client):
-    body = client.get("/api/items?min_price=200&max_price=300&per_page=100").get_json()
+    body = client.get("/api/v2/items?min_price=200&max_price=300&per_page=100").get_json()
 
     assert body["items"], "expected at least one item in the $200-$300 band"
     assert all(20000 <= item["price_cents"] <= 30000 for item in body["items"])
@@ -105,20 +105,20 @@ def test_price_range_filter(client):
 
 
 def test_search_matches_title_description_and_artist(client):
-    by_title = client.get("/api/items?q=swan").get_json()
+    by_title = client.get("/api/v2/items?q=swan").get_json()
     assert {item["slug"] for item in by_title["items"]} == {
         "swan-warm-light",
         "swan-through-willow",
     }
 
-    by_artist = client.get("/api/items?q=Prisha").get_json()
+    by_artist = client.get("/api/v2/items?q=Prisha").get_json()
     assert by_artist["pagination"]["total_items"] == 3
     assert all(item["artist"] == "Prisha Nandakumar" for item in by_artist["items"])
 
 
 def test_search_also_matches_image_alt_text(client):
     # "mountain" appears only in alt text; the descriptions say massif/ridge.
-    body = client.get("/api/items?q=mountain&per_page=100").get_json()
+    body = client.get("/api/v2/items?q=mountain&per_page=100").get_json()
 
     matched = {item["slug"]: item for item in body["items"]}
     assert "the-massif-and-the-shore" in matched
@@ -132,7 +132,7 @@ def test_search_also_matches_image_alt_text(client):
 def test_search_does_not_duplicate_rows_matching_several_fields(client):
     # "swan" hits title, description and alt text on the same rows; the EXISTS
     # subquery must not turn that into duplicate results.
-    body = client.get("/api/items?q=swan&per_page=100").get_json()
+    body = client.get("/api/v2/items?q=swan&per_page=100").get_json()
     slugs = [item["slug"] for item in body["items"]]
 
     assert len(slugs) == len(set(slugs))
@@ -141,48 +141,48 @@ def test_search_does_not_duplicate_rows_matching_several_fields(client):
 
 def test_created_at_is_explicit_utc(client):
     """Serialize creation timestamps as parseable UTC values."""
-    created_at = client.get("/api/items").get_json()["items"][0]["created_at"]
+    created_at = client.get("/api/v2/items").get_json()["items"][0]["created_at"]
 
     assert created_at.endswith("Z")
     datetime.fromisoformat(created_at.replace("Z", "+00:00"))
 
 
 def test_search_treats_wildcards_literally(client):
-    body = client.get("/api/items?q=%25").get_json()
+    body = client.get("/api/v2/items?q=%25").get_json()
     assert body["pagination"]["total_items"] == 0
 
 
 def test_category_filter_is_case_insensitive(client):
-    body = client.get("/api/items?category=wildlife&per_page=100").get_json()
+    body = client.get("/api/v2/items?category=wildlife&per_page=100").get_json()
 
     assert body["items"]
     assert all(item["category"] == "Wildlife" for item in body["items"])
 
 
 def test_categories_endpoint_counts_match_the_listing(client):
-    categories = client.get("/api/categories").get_json()["categories"]
+    categories = client.get("/api/v2/categories").get_json()["categories"]
 
     assert sum(entry["item_count"] for entry in categories) == CATALOG_SIZE
     for entry in categories:
         listing = client.get(
-            f"/api/items?category={entry['name']}&per_page=100"
+            f"/api/v2/items?category={entry['name']}&per_page=100"
         ).get_json()
         assert listing["pagination"]["total_items"] == entry["item_count"]
 
 
 def test_get_item_by_id_and_slug(client):
     """Resolve either item identifier to the same artwork payload."""
-    listed = client.get("/api/items").get_json()["items"][0]
+    listed = client.get("/api/v2/items").get_json()["items"][0]
 
-    by_id = client.get(f"/api/items/{listed['id']}").get_json()["item"]
-    by_slug = client.get(f"/api/items/{listed['slug']}").get_json()["item"]
+    by_id = client.get(f"/api/v2/items/{listed['id']}").get_json()["item"]
+    by_slug = client.get(f"/api/v2/items/{listed['slug']}").get_json()["item"]
 
     assert by_id == by_slug == listed
 
 
 def test_missing_item_returns_json_404(client):
     """Return a JSON 404 when no artwork matches the requested identifier."""
-    response = client.get("/api/items/does-not-exist")
+    response = client.get("/api/v2/items/does-not-exist")
 
     assert response.status_code == 404
     assert response.get_json()["error"]["status"] == 404
@@ -190,7 +190,7 @@ def test_missing_item_returns_json_404(client):
 
 def test_unknown_route_returns_json_not_html(client):
     """Keep framework 404 responses in the API's JSON format."""
-    response = client.get("/api/nope")
+    response = client.get("/api/v2/nope")
 
     assert response.status_code == 404
     assert response.mimetype == "application/json"
@@ -216,13 +216,13 @@ def test_seeding_twice_does_not_duplicate_rows(app):
 class TestCors:
     def test_wildcard_origin_by_default(self, client):
         """Allow browser requests from any origin in the default config."""
-        response = client.get("/api/items", headers={"Origin": "http://localhost:3000"})
+        response = client.get("/api/v2/items", headers={"Origin": "http://localhost:3000"})
         assert response.headers["Access-Control-Allow-Origin"] == "*"
 
     def test_preflight_is_answered(self, client):
         """Advertise GET support in a browser preflight response."""
         response = client.options(
-            "/api/items",
+            "/api/v2/items",
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
@@ -235,32 +235,32 @@ class TestCors:
         """Advertise CORS only for origins in the configured allowlist."""
         app.config["CORS_ORIGINS"] = ["http://localhost:3000"]
 
-        allowed = client.get("/api/items", headers={"Origin": "http://localhost:3000"})
+        allowed = client.get("/api/v2/items", headers={"Origin": "http://localhost:3000"})
         assert allowed.headers["Access-Control-Allow-Origin"] == "http://localhost:3000"
         assert "Origin" in allowed.headers["Vary"]
 
-        blocked = client.get("/api/items", headers={"Origin": "http://evil.example"})
+        blocked = client.get("/api/v2/items", headers={"Origin": "http://evil.example"})
         assert "Access-Control-Allow-Origin" not in blocked.headers
 
 
 class TestBadInput:
     def test_non_integer_page(self, client):
-        response = client.get("/api/items?page=abc")
+        response = client.get("/api/v2/items?page=abc")
         assert response.status_code == 400
         assert "page" in response.get_json()["error"]["message"]
 
     def test_per_page_above_maximum(self, client):
-        response = client.get("/api/items?per_page=500")
+        response = client.get("/api/v2/items?per_page=500")
         assert response.status_code == 400
 
     def test_unknown_sort_lists_the_valid_options(self, client):
-        response = client.get("/api/items?sort=cheapest")
+        response = client.get("/api/v2/items?sort=cheapest")
         assert response.status_code == 400
         assert "price_asc" in response.get_json()["error"]["details"]["allowed"]
 
     def test_inverted_price_range(self, client):
-        response = client.get("/api/items?min_price=400&max_price=200")
+        response = client.get("/api/v2/items?min_price=400&max_price=200")
         assert response.status_code == 400
 
     def test_negative_price(self, client):
-        assert client.get("/api/items?min_price=-5").status_code == 400
+        assert client.get("/api/v2/items?min_price=-5").status_code == 400
