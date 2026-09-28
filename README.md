@@ -41,6 +41,7 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 | --- | --- | --- |
 | `GET` | `/api/items` | Paginated, filterable, sortable listing |
 | `GET` | `/api/items/<id-or-slug>` | A single piece |
+| `GET` | `/api/items/<id-or-slug>/detail` | A single piece plus its artist, category, related pieces and neighbours |
 | `GET` | `/api/categories` | Categories in the catalogue, with counts |
 | `GET` | `/health` | Liveness check |
 | `GET` | `/static/images/...` | The artwork images |
@@ -115,6 +116,59 @@ JSON `404` when nothing matches:
 { "error": { "status": 404, "message": "No item matching 'does-not-exist'" } }
 ```
 
+### `GET /api/items/<id-or-slug>/detail`
+
+What a product page needs when a listing card is clicked, in one request
+instead of the several filtered listing calls it would otherwise take. The
+`item` key is the listing object verbatim, plus `image_count`; everything else
+is context derived from the same catalogue.
+
+| Parameter | Default | Notes |
+| --- | --- | --- |
+| `related_limit` | `4` | Pieces per rail (`similar` and `artist.other_works`). `0` to `12`; `0` returns the counts without the rails |
+
+```json
+{
+  "item": { "...": "the listing object", "image_count": 1 },
+  "artist": {
+    "name": "Prisha Nandakumar",
+    "item_count": 3,
+    "other_work_count": 2,
+    "years": { "earliest": 2019, "latest": 2022 },
+    "price_range": { "min": 218.5, "max": 368.5, "min_cents": 21850, "max_cents": 36850, "currency": "USD" },
+    "other_works": [ { "...": "compact item reference" } ]
+  },
+  "category": {
+    "name": "Wildlife",
+    "item_count": 8,
+    "price_range": { "min": 110.5, "max": 469.5, "min_cents": 11050, "max_cents": 46950, "currency": "USD" }
+  },
+  "similar": [ { "...": "compact item reference" } ],
+  "navigation": {
+    "position": 16,
+    "total_items": 30,
+    "previous": { "...": "compact item reference" },
+    "next": { "...": "compact item reference" }
+  }
+}
+```
+
+A compact item reference is `id`, `slug`, `title`, `artist`, `year`,
+`category`, `price`, `price_cents`, `currency` and `primary_image` — enough to
+draw a card and link to it, without the description or the full image list.
+
+Notes for the frontend:
+
+- `artist.item_count` and `category.item_count` agree with
+  `/api/items?artist=...` and `/api/categories`, so a "View all 8 in Wildlife"
+  link can be labelled without a second request.
+- `similar` and `artist.other_works` are independent lists and may overlap: a
+  small category would otherwise come back empty for an artist who dominates
+  it. Both exclude the piece being viewed.
+- `navigation` follows the listing's `curated` sort, so previous/next arrows
+  walk the catalogue in the order the grid showed. `position` is 1-based.
+- A missing piece is the same JSON `404` as `/api/items/<id-or-slug>`.
+
 Notes for the frontend:
 
 - `price` is a convenience float; `price_cents` is the authoritative integer.
@@ -136,7 +190,7 @@ app/
   seed.py         catalogue -> database
   errors.py       one JSON error shape for every failure
   api/
-    items.py      the listing endpoints
+    items.py      the listing, detail and category endpoints
     params.py     query-string parsing and validation
   static/images/  vendored artwork images (+ thumbs/)
 scripts/
