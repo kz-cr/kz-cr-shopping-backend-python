@@ -18,7 +18,7 @@ seeds `instance/gallery.db` and serves on <http://127.0.0.1:5000>. It is safe to
 re-run — every step is skipped when it is already done.
 
 ```bash
-curl http://127.0.0.1:5000/api/items
+curl http://127.0.0.1:5000/api/v2/items
 ```
 
 | Flag | Effect |
@@ -39,13 +39,13 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/items` | Paginated, filterable, sortable listing |
-| `GET` | `/api/items/<id-or-slug>` | A single piece |
-| `GET` | `/api/categories` | Categories in the catalogue, with counts |
+| `GET` | `/api/v2/items` | Paginated, filterable, sortable listing |
+| `GET` | `/api/v2/items/<id-or-slug>` | A single piece |
+| `GET` | `/api/v2/categories` | Categories in the catalogue, with counts |
 | `GET` | `/health` | Liveness check |
 | `GET` | `/static/images/...` | The artwork images |
 
-### `GET /api/items`
+### `GET /api/v2/items`
 
 | Parameter | Default | Notes |
 | --- | --- | --- |
@@ -108,8 +108,8 @@ Bad input is a `400` with a JSON body rather than a silently ignored filter:
 }
 ```
 
-`GET /api/items/<id-or-slug>` returns the same object under an `item` key, and a
-JSON `404` when nothing matches:
+`GET /api/v2/items/<id-or-slug>` returns the same object under an `item` key,
+and a JSON `404` when nothing matches:
 
 ```json
 { "error": { "status": 404, "message": "No item matching 'does-not-exist'" } }

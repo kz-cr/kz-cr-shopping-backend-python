@@ -1,8 +1,8 @@
 """Listing endpoints.
 
-``GET /api/items``            paginated, filterable, sortable listing
-``GET /api/items/<id|slug>``  a single piece
-``GET /api/categories``       the categories present in the catalogue
+``GET /api/v2/items``            paginated, filterable, sortable listing
+``GET /api/v2/items/<id|slug>``  a single piece
+``GET /api/v2/categories``       the categories present in the catalogue
 """
 
 from __future__ import annotations

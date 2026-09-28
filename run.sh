@@ -150,6 +150,6 @@ fi
 FLAGS=""
 [ "$DEBUG" -eq 1 ] && FLAGS="--debug"
 
-say "Serving on http://$HOST:$PORT — try /api/items, Ctrl-C to stop"
+say "Serving on http://$HOST:$PORT — try /api/v2/items, Ctrl-C to stop"
 # shellcheck disable=SC2086  # FLAGS is a single optional flag, not a path
 exec "$VENV_PYTHON" -m flask --app wsgi run --host "$HOST" --port "$PORT" $FLAGS
