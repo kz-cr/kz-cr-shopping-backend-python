@@ -39,20 +39,40 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/items` | Every piece in the catalogue |
+| `GET` | `/api/items` | Paginated, filterable, sortable listing |
 | `GET` | `/api/items/<id-or-slug>` | A single piece |
+| `GET` | `/api/categories` | Categories in the catalogue, with counts |
 | `GET` | `/health` | Liveness check |
 | `GET` | `/static/images/...` | The artwork images |
 
-`/api/items` returns all 30 records in one response — at this size there is
-nothing to gain from paging. Pagination, search, filtering and sorting are a
-follow-up; `items` keeps its shape when they land.
+### `GET /api/items`
+
+| Parameter | Default | Notes |
+| --- | --- | --- |
+| `page` | `1` | |
+| `per_page` | `12` | Max 100 |
+| `q` | — | Case-insensitive match on title, description, artist and image alt text |
+| `category` | — | Case-insensitive exact match, e.g. `Landscape` |
+| `artist` | — | Case-insensitive exact match |
+| `min_price` / `max_price` | — | In dollars, e.g. `min_price=150.50` |
+| `sort` | `curated` | `curated`, `price_asc`, `price_desc`, `title_asc`, `title_desc`, `newest` |
+
+Bad input is a `400` with a JSON body rather than a silently ignored filter:
+
+```json
+{
+  "error": {
+    "status": 400,
+    "message": "'sort' must be one of ['curated', 'newest', 'price_asc', 'price_desc', 'title_asc', 'title_desc'], got 'cheapest'",
+    "details": { "allowed": ["curated", "newest", "price_asc", "price_desc", "title_asc", "title_desc"] }
+  }
+}
+```
 
 ### Response shape
 
 ```json
 {
-  "count": 30,
   "items": [
     {
       "id": 1,
@@ -79,7 +99,12 @@ follow-up; `items` keeps its shape when they land.
       "primary_image": { "...": "same object as images[0]" },
       "created_at": "2026-09-25T05:37:16.172553Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1, "per_page": 12, "total_items": 30,
+    "total_pages": 3, "has_previous": false, "has_next": true
+  },
+  "applied": { "q": null, "category": null, "artist": null, "min_price": null, "max_price": null, "sort": "curated" }
 }
 ```
 
@@ -112,6 +137,7 @@ app/
   errors.py       one JSON error shape for every failure
   api/
     items.py      the listing endpoints
+    params.py     query-string parsing and validation
   static/images/  vendored artwork images (+ thumbs/)
 scripts/
   fetch_images.py re-download and re-process the images
@@ -164,8 +190,7 @@ CORS_ORIGINS=http://localhost:3000 python wsgi.py
 
 ## Roadmap
 
-This is the listing slice only. Still to come:
+Still to come:
 
-- Pagination, search, filtering and sorting on `/api/items`
 - Auth, cart and checkout
 - Write endpoints — every route here is a read
