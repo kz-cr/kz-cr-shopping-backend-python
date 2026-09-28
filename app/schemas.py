@@ -51,9 +51,9 @@ def serialize_artwork(artwork: Artwork) -> dict[str, Any]:
     return {
         "id": artwork.id,
         "slug": artwork.slug,
-        "title": artwork.title,
+        "name": artwork.title,
         "description": artwork.description,
-        "artist": artwork.artist,
+        "creator": artwork.artist,
         "year": artwork.year,
         "medium": artwork.medium,
         "category": artwork.category,
