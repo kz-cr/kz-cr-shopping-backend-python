@@ -31,7 +31,7 @@ def test_item_payload_shape(client):
     """Expose prices and image metadata in the documented API shape."""
     item = client.get("/api/items").get_json()["items"][0]
 
-    assert item["title"]
+    assert item["name"]
     assert len(item["description"]) > 40
     assert PRICE_MIN_CENTS <= item["price_cents"] <= PRICE_MAX_CENTS
     assert item["price"] == round(item["price_cents"] / 100, 2)
@@ -45,13 +45,13 @@ def test_item_payload_shape(client):
     assert item["primary_image"] == image
 
 
-def test_every_item_has_a_title_description_price_and_image(client):
+def test_every_item_has_a_name_description_price_and_image(client):
     """Keep required listing fields populated across the whole catalogue."""
     body = client.get("/api/items?per_page=100").get_json()
     assert len(body["items"]) == CATALOG_SIZE
 
     for item in body["items"]:
-        assert item["title"], item["slug"]
+        assert item["name"], item["slug"]
         assert len(item["description"]) > 40, item["slug"]
         assert PRICE_MIN_CENTS <= item["price_cents"] <= PRICE_MAX_CENTS, item["slug"]
         assert item["images"], item["slug"]
@@ -104,9 +104,9 @@ def test_price_range_filter(client):
     assert body["applied"]["max_price"] == 300.0
 
 
-def test_search_matches_title_description_and_artist(client):
-    by_title = client.get("/api/items?q=swan").get_json()
-    assert {item["slug"] for item in by_title["items"]} == {
+def test_search_matches_name_description_and_artist(client):
+    by_name = client.get("/api/items?q=swan").get_json()
+    assert {item["slug"] for item in by_name["items"]} == {
         "swan-warm-light",
         "swan-through-willow",
     }
@@ -124,13 +124,13 @@ def test_search_also_matches_image_alt_text(client):
     assert "the-massif-and-the-shore" in matched
 
     hit = matched["the-massif-and-the-shore"]
-    assert "mountain" not in hit["title"].lower()
+    assert "mountain" not in hit["name"].lower()
     assert "mountain" not in hit["description"].lower()
     assert "mountain" in hit["images"][0]["alt"].lower()
 
 
 def test_search_does_not_duplicate_rows_matching_several_fields(client):
-    # "swan" hits title, description and alt text on the same rows; the EXISTS
+    # "swan" hits name, description and alt text on the same rows; the EXISTS
     # subquery must not turn that into duplicate results.
     body = client.get("/api/items?q=swan&per_page=100").get_json()
     slugs = [item["slug"] for item in body["items"]]
