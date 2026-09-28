@@ -49,6 +49,7 @@ def create_app(config: str | type[BaseConfig] | None = None) -> Flask:
                 "endpoints": {
                     "items": "/api/items",
                     "item": "/api/items/<id-or-slug>",
+                    "item_detail": "/api/items/<id-or-slug>/detail",
                     "categories": "/api/categories",
                     "health": "/health",
                 },

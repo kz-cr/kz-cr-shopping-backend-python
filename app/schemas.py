@@ -64,3 +64,39 @@ def serialize_artwork(artwork: Artwork) -> dict[str, Any]:
         "primary_image": images[0] if images else None,
         "created_at": _isoformat_utc(artwork.created_at),
     }
+
+
+def serialize_item_reference(artwork: Artwork) -> dict[str, Any]:
+    """Convert an artwork to the compact shape used by detail-page rails.
+
+    Related pieces and the previous/next links only need enough to draw a card
+    and a link, so the description and the full image list are left out.
+    """
+    images = artwork.images
+    return {
+        "id": artwork.id,
+        "slug": artwork.slug,
+        "title": artwork.title,
+        "artist": artwork.artist,
+        "year": artwork.year,
+        "category": artwork.category,
+        "price": artwork.price,
+        "price_cents": artwork.price_cents,
+        "currency": artwork.currency,
+        "primary_image": serialize_image(images[0]) if images else None,
+    }
+
+
+def serialize_price_range(
+    min_cents: int | None, max_cents: int | None, currency: str
+) -> dict[str, Any] | None:
+    """Describe a span of prices in both dollars and authoritative cents."""
+    if min_cents is None or max_cents is None:
+        return None
+    return {
+        "min": round(min_cents / 100, 2),
+        "max": round(max_cents / 100, 2),
+        "min_cents": min_cents,
+        "max_cents": max_cents,
+        "currency": currency,
+    }
