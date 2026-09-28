@@ -53,7 +53,7 @@ def serialize_artwork(artwork: Artwork) -> dict[str, Any]:
         "slug": artwork.slug,
         "name": artwork.title,
         "description": artwork.description,
-        "artist": artwork.artist,
+        "creator": artwork.artist,
         "year": artwork.year,
         "medium": artwork.medium,
         "category": artwork.category,

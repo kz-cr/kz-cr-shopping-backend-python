@@ -51,9 +51,9 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 | --- | --- | --- |
 | `page` | `1` | |
 | `per_page` | `12` | Max 100 |
-| `q` | — | Case-insensitive match on name, description, artist and image alt text |
+| `q` | — | Case-insensitive match on name, description, creator and image alt text |
 | `category` | — | Case-insensitive exact match, e.g. `Landscape` |
-| `artist` | — | Case-insensitive exact match |
+| `artist` | — | Case-insensitive exact match against the `creator` field |
 | `min_price` / `max_price` | — | In dollars, e.g. `min_price=150.50` |
 | `sort` | `curated` | `curated`, `price_asc`, `price_desc`, `title_asc`, `title_desc`, `newest` |
 
@@ -79,7 +79,7 @@ Bad input is a `400` with a JSON body rather than a silently ignored filter:
       "slug": "blue-sedan-wrapped",
       "name": "Blue Sedan, Wrapped",
       "description": "A die-cast sedan parked on the ribbon of a red gift box ...",
-      "artist": "Marta Vreeland",
+      "creator": "Marta Vreeland",
       "year": 2019,
       "medium": "Archival pigment print",
       "category": "Still Life",

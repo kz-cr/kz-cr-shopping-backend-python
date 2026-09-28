@@ -104,16 +104,16 @@ def test_price_range_filter(client):
     assert body["applied"]["max_price"] == 300.0
 
 
-def test_search_matches_name_description_and_artist(client):
+def test_search_matches_name_description_and_creator(client):
     by_name = client.get("/api/items?q=swan").get_json()
     assert {item["slug"] for item in by_name["items"]} == {
         "swan-warm-light",
         "swan-through-willow",
     }
 
-    by_artist = client.get("/api/items?q=Prisha").get_json()
-    assert by_artist["pagination"]["total_items"] == 3
-    assert all(item["artist"] == "Prisha Nandakumar" for item in by_artist["items"])
+    by_creator = client.get("/api/items?q=Prisha").get_json()
+    assert by_creator["pagination"]["total_items"] == 3
+    assert all(item["creator"] == "Prisha Nandakumar" for item in by_creator["items"])
 
 
 def test_search_also_matches_image_alt_text(client):
